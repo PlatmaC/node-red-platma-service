@@ -11,22 +11,15 @@ module.exports = function(RED) {
 
               const apikey = msg.apikey || config.apikey;
               const url = msg.url || config.url;
-              const filter = JSON.parse(msg.filter||config.filter);
+              const filterByField = msg.filterByField;
+              const filterByValue = msg.filterByValue;
 
-              if (!filter) {
+              const filterByField2 = msg.filterByField2;
+              const filterByValue2 = msg.filterByValue2;
+
+              if (!((filterByField&&filterByValue)||(filterByField2&&filterByValue2))) {
                 node.error(RED._('platma-info.errors.no-filter'));
                 node.status({ fill: 'red', shape: 'dot', text: 'Error. No filter' });
-                return;
-              } else if(Array.isArray(filter)){
-                filter.forEach(element => {
-                if (!element.field||!element.value) {
-                  node.error(RED._('platma-info.errors.wrong-filter'));
-                  node.status({ fill: 'red', shape: 'dot', text: 'Error. Wrong filter' });
-                  return;
-                }
-              });} else if (!filter.field||!filter.value) {
-                node.error(RED._('platma-info.errors.wrong-filter'));
-                node.status({ fill: 'red', shape: 'dot', text: 'Error. Wrong filter' });
                 return;
               }
               
@@ -48,17 +41,15 @@ module.exports = function(RED) {
               });
 
               let finalUrl = url;
-              if (Array.isArray(filter)) {
-                let flag = false;
-                filter.forEach(element => {
-                  if (flag) {finalUrl+="&"} else {finalUrl+="?"}
-                  finalUrl += `${element.field}=${element.value}`;
-                  flag = true;
-                });
-              } else {
-              finalUrl += `?${filter.field}=${filter.value}`;
+
+              if (filterByField&&filterByValue){
+                finalUrl += `?${filterByField}=${filterByValue}`;
               }
 
+              if( filterByField2&& filterByValue2) {
+                finalUrl += `${(filterByField&&filterByValue) ? '&' : '?'}${filterByField2}=${filterByValue2}`;
+              }
+              
               axios({
                 method: 'get',
                 url: finalUrl,
