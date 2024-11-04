@@ -11,13 +11,20 @@ module.exports = function(RED) {
 
               const apikey = msg.apikey || config.apikey;
               const url = msg.url || config.url;
-              const filter = msg.filter || config.filter;
+              const filter = JSON.parse(msg.filter||config.filter);
 
               if (!filter) {
                 node.error(RED._('platma-info.errors.no-filter'));
                 node.status({ fill: 'red', shape: 'dot', text: 'Error. No filter' });
                 return;
-              } else if (!JSON.parse(filter).field||!JSON.parse(filter).value) {
+              } else if(Array.isArray(filter)){
+                filter.forEach(element => {
+                if (!element.field||!element.value) {
+                  node.error(RED._('platma-info.errors.wrong-filter'));
+                  node.status({ fill: 'red', shape: 'dot', text: 'Error. Wrong filter' });
+                  return;
+                }
+              });} else if (!filter.field||!filter.value) {
                 node.error(RED._('platma-info.errors.wrong-filter'));
                 node.status({ fill: 'red', shape: 'dot', text: 'Error. Wrong filter' });
                 return;
@@ -40,7 +47,17 @@ module.exports = function(RED) {
                 text: 'http-request-np.status.requesting',
               });
 
-              const finalUrl = url + `?${JSON.parse(filter).field}=${JSON.parse(filter).value}`;
+              let finalUrl = url;
+              if (Array.isArray(filter)) {
+                let flag = false;
+                filter.forEach(element => {
+                  if (flag) {finalUrl+="&"} else {finalUrl+="?"}
+                  finalUrl += `${element.field}=${element.value}`;
+                  flag = true;
+                });
+              } else {
+              finalUrl += `?${filter.field}=${filter.value}`;
+              }
 
               axios({
                 method: 'get',
